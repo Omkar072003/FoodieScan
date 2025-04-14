@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FoodieScan - Food Delivery</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Navbar */
+        .navbar {
+            width: 100%;
+            background: #2c3e50;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar .logo {
+            color: #fff;
+            font-size: 1.5rem;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 1rem;
+            transition: color 0.3s;
+        }
+
+        .nav-links a:hover {
+            color: #f1c40f;
+        }
+
+        .cart-icon {
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .cart-icon span {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #e74c3c;
+            color: #fff;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.8rem;
+        }
+
+        /* Dashboard */
+        #dashboard {
+            margin-top: 80px;
+            text-align: center;
+            padding: 20px;
+            max-width: 800px;
+            width: 100%;
+            animation: fadeIn 1s ease-in;
+        }
+
+        h1 {
+            color: #2c3e50;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        /* QR Scanner */
+        #qr-scanner {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        #video {
+            border-radius: 8px;
+            width: 100%;
+            max-width: 400px;
+            border: 3px solid #3498db;
+        }
+
+        #scan-btn {
+            padding: 12px 24px;
+            font-size: 1rem;
+            background: #3498db;
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        #scan-btn:hover {
+            background: #2980b9;
+            transform: scale(1.05);
+        }
+
+        /* Menu */
+        #menu {
+            display: none;
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #resto-name {
+            color: #2c3e50;
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+        }
+
+        #menu-items {
+            list-style: none;
+            padding: 0;
+        }
+
+        #menu-items li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #f9f9f9;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            transition: transform 0.2s;
+        }
+
+        #menu-items li:hover {
+            transform: translateX(5px);
+        }
+
+        .add-to-cart {
+            background: #f1c40f;
+            color: #fff;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .add-to-cart:hover {
+            background: #d4ac0d;
+        }
+
+        #back-btn {
+            padding: 12px 24px;
+            font-size: 1rem;
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        #back-btn:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: none;
+            font-size: 1.2rem;
+            color: #3498db;
+            margin-top: 20px;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #3498db;
+            border-top: 3px solid transparent;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .navbar {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .nav-links {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            #resto-name {
+                font-size: 1.4rem;
+            }
+
+            #video {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .navbar .logo {
+                font-size: 1.2rem;
+            }
+
+            .nav-links a {
+                font-size: 0.9rem;
+            }
+
+            #scan-btn, #back-btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <a href="#" class="logo">FoodieScan</a>
+        <div class="nav-links">
+            <a href="#">Home</a>
+            <a href="#">Orders</a>
+            <a href="#">Profile</a>
+        </div>
+        <div class="cart-icon" onclick="alert('View cart (mock feature)!')">
+            🛒 <span id="cart-count">0</span>
+        </div>
+    </nav>
+
+    <!-- Dashboard -->
+    <div id="dashboard">
+        <h1>Welcome to FoodieScan</h1>
+        <div id="qr-scanner">
+            <video id="video" autoplay></video>
+            <canvas id="canvas" style="display: none;"></canvas>
+            <button id="scan-btn">Start QR Scan</button>
+        </div>
+        <div id="menu">
+            <h2 id="resto-name"></h2>
+            <ul id="menu-items"></ul>
+            <button id="back-btn">Back to Scanner</button>
+        </div>
+        <div class="loading" id="loading">Scanning...</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <script>
+        // Mock restaurant menu data
+        const restaurants = {
+            "resto1": {
+                name: "Tasty Bistro",
+                menu: [
+                    { item: "Burger", price: "$8" },
+                    { item: "Pizza", price: "$12" },
+                    { item: "Salad", price: "$6" }
+                ]
+            },
+            "resto2": {
+                name: "Spicy Kitchen",
+                menu: [
+                    { item: "Tacos", price: "$7" },
+                    { item: "Burrito", price: "$9" },
+                    { item: "Nachos", price: "$5" }
+                ]
+            }
+        };
+
+        let stream = null;
+        let cartCount = 0;
+
+        // DOM Elements
+        const scanBtn = document.getElementById("scan-btn");
+        const backBtn = document.getElementById("back-btn");
+        const qrScanner = document.getElementById("qr-scanner");
+        const menuDiv = document.getElementById("menu");
+        const loading = document.getElementById("loading");
+        const cartCountSpan = document.getElementById("cart-count");
+
+        // Event Listeners
+        scanBtn.addEventListener("click", startQRScanner);
+        backBtn.addEventListener("click", showScanner);
+
+        function startQRScanner() {
+            const video = document.getElementById("video");
+            const canvas = document.getElementById("canvas");
+            const context = canvas.getContext("2d");
+
+            scanBtn.disabled = true;
+            loading.style.display = "block";
+
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+                .then(mediaStream => {
+                    stream = mediaStream;
+                    video.srcObject = stream;
+                    video.play();
+                    scanQRCode(video, canvas, context);
+                })
+                .catch(err => {
+                    console.error("Camera access error:", err);
+                    alert("Unable to access camera. Please ensure permissions are granted.");
+                    scanBtn.disabled = false;
+                    loading.style.display = "none";
+                });
+        }
+
+        function scanQRCode(video, canvas, context) {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+            if (code) {
+                stopCamera();
+                displayMenu(code.data);
+            } else {
+                requestAnimationFrame(() => scanQRCode(video, canvas, context));
+            }
+        }
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            scanBtn.disabled = false;
+            loading.style.display = "none";
+        }
+
+        function displayMenu(qrData) {
+            const restoName = document.getElementById("resto-name");
+            const menuItems = document.getElementById("menu-items");
+
+            const resto = restaurants[qrData];
+            if (resto) {
+                restoName.textContent = resto.name;
+                menuItems.innerHTML = "";
+                resto.menu.forEach(item => {
+                    const li = document.createElement("li");
+                    li.innerHTML = `
+                        ${item.item} - ${item.price}
+                        <button class="add-to-cart" onclick="addToCart('${item.item}')">Add to Cart</button>
+                    `;
+                    menuItems.appendChild(li);
+                });
+                qrScanner.style.display = "none";
+                menuDiv.style.display = "block";
+            } else {
+                alert("Restaurant not found!");
+                showScanner();
+            }
+        }
+
+        function showScanner() {
+            menuDiv.style.display = "none";
+            qrScanner.style.display = "block";
+            stopCamera();
+            document.getElementById("video").srcObject = null;
+        }
+
+        function addToCart(item) {
+            cartCount++;
+            cartCountSpan.textContent = cartCount;
+            alert(`${item} added to cart (mock feature)!`);
+        }
+    </script>
+</body>
+</html>
