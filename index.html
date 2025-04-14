@@ -106,9 +106,18 @@
             width: 100%;
             max-width: 400px;
             border: 3px solid #3498db;
+            display: none;
         }
 
-        #scan-btn {
+        .scanner-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        #scan-btn, #upload-btn {
             padding: 12px 24px;
             font-size: 1rem;
             background: #3498db;
@@ -116,13 +125,16 @@
             border: none;
             border-radius: 25px;
             cursor: pointer;
-            margin-top: 15px;
             transition: background 0.3s, transform 0.2s;
         }
 
-        #scan-btn:hover {
+        #scan-btn:hover, #upload-btn:hover {
             background: #2980b9;
             transform: scale(1.05);
+        }
+
+        #qr-upload {
+            display: none;
         }
 
         /* Menu */
@@ -244,6 +256,11 @@
             #video {
                 max-width: 100%;
             }
+
+            .scanner-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
         }
 
         @media (max-width: 480px) {
@@ -255,7 +272,7 @@
                 font-size: 0.9rem;
             }
 
-            #scan-btn, #back-btn {
+            #scan-btn, #upload-btn, #back-btn {
                 padding: 10px 20px;
                 font-size: 0.9rem;
             }
@@ -282,14 +299,18 @@
         <div id="qr-scanner">
             <video id="video" autoplay></video>
             <canvas id="canvas" style="display: none;"></canvas>
-            <button id="scan-btn">Start QR Scan</button>
+            <div class="scanner-buttons">
+                <button id="scan-btn">Scan QR Code</button>
+                <label id="upload-btn" for="qr-upload">Upload QR Image</label>
+                <input type="file" id="qr-upload" accept="image/*">
+            </div>
         </div>
         <div id="menu">
             <h2 id="resto-name"></h2>
             <ul id="menu-items"></ul>
             <button id="back-btn">Back to Scanner</button>
         </div>
-        <div class="loading" id="loading">Scanning...</div>
+        <div class="loading" id="loading">Processing...</div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -319,23 +340,26 @@
 
         // DOM Elements
         const scanBtn = document.getElementById("scan-btn");
+        const uploadInput = document.getElementById("qr-upload");
         const backBtn = document.getElementById("back-btn");
         const qrScanner = document.getElementById("qr-scanner");
         const menuDiv = document.getElementById("menu");
         const loading = document.getElementById("loading");
         const cartCountSpan = document.getElementById("cart-count");
+        const video = document.getElementById("video");
 
         // Event Listeners
         scanBtn.addEventListener("click", startQRScanner);
+        uploadInput.addEventListener("change", handleImageUpload);
         backBtn.addEventListener("click", showScanner);
 
         function startQRScanner() {
-            const video = document.getElementById("video");
             const canvas = document.getElementById("canvas");
             const context = canvas.getContext("2d");
 
             scanBtn.disabled = true;
             loading.style.display = "block";
+            video.style.display = "block";
 
             navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
                 .then(mediaStream => {
@@ -349,6 +373,7 @@
                     alert("Unable to access camera. Please ensure permissions are granted.");
                     scanBtn.disabled = false;
                     loading.style.display = "none";
+                    video.style.display = "none";
                 });
         }
 
@@ -360,11 +385,53 @@
             const code = jsQR(imageData.data, imageData.width, imageData.height);
 
             if (code) {
+                console.log("Scanned QR code data:", code.data);
                 stopCamera();
                 displayMenu(code.data);
             } else {
                 requestAnimationFrame(() => scanQRCode(video, canvas, context));
             }
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) {
+                console.log("No file selected");
+                return;
+            }
+
+            scanBtn.disabled = true;
+            loading.style.display = "block";
+
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.getElementById("canvas");
+                const context = canvas.getContext("2d");
+                canvas.width = img.width;
+                canvas.height = img.height;
+                context.drawImage(img, 0, 0, img.width, img.height);
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+                if (code) {
+                    console.log("Uploaded QR code data:", code.data);
+                    displayMenu(code.data);
+                } else {
+                    alert("No QR code found in the uploaded image. Please upload a valid QR code.");
+                    showScanner();
+                }
+                scanBtn.disabled = false;
+                loading.style.display = "none";
+                event.target.value = ""; // Reset file input
+                URL.revokeObjectURL(img.src); // Clean up
+            };
+            img.onerror = () => {
+                alert("Failed to load the image. Please try another.");
+                scanBtn.disabled = false;
+                loading.style.display = "none";
+                event.target.value = "";
+            };
+            img.src = URL.createObjectURL(file);
         }
 
         function stopCamera() {
@@ -374,17 +441,27 @@
             }
             scanBtn.disabled = false;
             loading.style.display = "none";
+            video.style.display = "none";
+            video.srcObject = null;
         }
 
         function displayMenu(qrData) {
             const restoName = document.getElementById("resto-name");
             const menuItems = document.getElementById("menu-items");
 
-            const resto = restaurants[qrData];
+            // Normalize QR data: trim and convert to lowercase
+            const normalizedQrData = qrData.trim().toLowerCase();
+            console.log("Normalized QR data:", normalizedQrData);
+
+            // Check if restaurant exists (case-insensitive keys)
+            const resto = Object.keys(restaurants).find(
+                key => key.toLowerCase() === normalizedQrData
+            );
+
             if (resto) {
-                restoName.textContent = resto.name;
+                restoName.textContent = restaurants[resto].name;
                 menuItems.innerHTML = "";
-                resto.menu.forEach(item => {
+                restaurants[resto].menu.forEach(item => {
                     const li = document.createElement("li");
                     li.innerHTML = `
                         ${item.item} - ${item.price}
@@ -395,7 +472,7 @@
                 qrScanner.style.display = "none";
                 menuDiv.style.display = "block";
             } else {
-                alert("Restaurant not found!");
+                alert(`Restaurant not found for QR code: "${qrData}". Please use a valid QR code (e.g., "resto1" or "resto2").`);
                 showScanner();
             }
         }
@@ -404,7 +481,6 @@
             menuDiv.style.display = "none";
             qrScanner.style.display = "block";
             stopCamera();
-            document.getElementById("video").srcObject = null;
         }
 
         function addToCart(item) {
